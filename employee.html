@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Portal - HRMS</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="header">
+        <div>
+            <a href="index.html"><strong>HRMS</strong></a>
+            <span>Employee Portal</span>
+        </div>
+        <div>Current User: Employee</div>
+    </div>
+
+    <div class="container">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h2>Yêu cầu của tôi</h2>
+            <button onclick="document.getElementById('createModal').style.display='block'">+ Tạo yêu cầu mới</button>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Mã YC</th>
+                    <th>Danh mục</th>
+                    <th>Tiêu đề</th>
+                    <th>Ưu tiên</th>
+                    <th>Trạng thái</th>
+                    <th>Ngày tạo</th>
+                </tr>
+            </thead>
+            <tbody id="requestTableBody">
+                <tr><td colspan="6" style="text-align:center;">Đang tải dữ liệu từ Supabase...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Create Request Modal -->
+    <div id="createModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="document.getElementById('createModal').style.display='none'">&times;</span>
+            <h2>Tạo yêu cầu HR mới</h2>
+            <form id="createForm">
+                <div class="form-group">
+                    <label>Danh mục (Category)</label>
+                    <select id="cat" required>
+                        <option value="Leave & Attendance">Leave & Attendance</option>
+                        <option value="Documents & Certificates">Documents & Certificates</option>
+                        <option value="Training & Development">Training & Development</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Loại con (Sub-category)</label>
+                    <input type="text" id="subcat" required placeholder="VD: Nghỉ phép, Xin giấy xác nhận...">
+                </div>
+                <div class="form-group">
+                    <label>Tiêu đề</label>
+                    <input type="text" id="title" required>
+                </div>
+                <div class="form-group">
+                    <label>Mức ưu tiên</label>
+                    <select id="priority" required>
+                        <option value="Low">Low</option>
+                        <option value="Medium">Medium</option>
+                        <option value="High">High</option>
+                        <option value="Critical">Critical</option>
+                    </select>
+                </div>
+                <button type="submit" id="submitBtn">Gửi yêu cầu</button>
+            </form>
+        </div>
+    </div>
+
+    <script type="module">
+        import { getRequests, createRequest } from './app.js';
+
+        async function loadTable() {
+            const reqs = await getRequests();
+            const tbody = document.getElementById('requestTableBody');
+            tbody.innerHTML = '';
+            
+            if(reqs.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Chưa có dữ liệu</td></tr>';
+                return;
+            }
+
+            reqs.forEach(r => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${r.id}</td>
+                        <td>${r.category}<br><small>${r.subcategory}</small></td>
+                        <td>${r.title}</td>
+                        <td><span class="priority priority-${r.priority}">${r.priority}</span></td>
+                        <td><span class="status-badge status-${r.status}">${r.status}</span></td>
+                        <td>${r.date}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        document.getElementById('createForm').onsubmit = async function(e) {
+            e.preventDefault();
+            document.getElementById('submitBtn').innerText = "Đang gửi...";
+            document.getElementById('submitBtn').disabled = true;
+
+            await createRequest({
+                category: document.getElementById('cat').value,
+                subcategory: document.getElementById('subcat').value,
+                title: document.getElementById('title').value,
+                priority: document.getElementById('priority').value
+            });
+
+            document.getElementById('createModal').style.display = 'none';
+            document.getElementById('createForm').reset();
+            document.getElementById('submitBtn').innerText = "Gửi yêu cầu";
+            document.getElementById('submitBtn').disabled = false;
+            
+            await loadTable();
+        };
+
+        // Init
+        loadTable();
+    </script>
+</body>
+</html>

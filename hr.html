@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HR Workspace - HRMS</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="header">
+        <div>
+            <a href="index.html"><strong>HRMS</strong></a>
+            <span>HR Workspace (Kanban)</span>
+        </div>
+        <div>Current User: HR Admin</div>
+    </div>
+
+    <div class="container" style="max-width: 1400px;">
+        <h2>Quản lý yêu cầu (Kanban Board)</h2>
+        
+        <div class="kanban-board">
+            <div class="kanban-column" id="col-Submitted">
+                <h3>Submitted (Mới)</h3>
+                <div class="cards-container">Đang tải...</div>
+            </div>
+            <div class="kanban-column" id="col-InProgress">
+                <h3>In Progress (Đang xử lý)</h3>
+                <div class="cards-container">Đang tải...</div>
+            </div>
+            <div class="kanban-column" id="col-WaitingInfo">
+                <h3>Waiting Info (Chờ thông tin)</h3>
+                <div class="cards-container">Đang tải...</div>
+            </div>
+            <div class="kanban-column" id="col-Resolved">
+                <h3>Resolved (Hoàn thành)</h3>
+                <div class="cards-container">Đang tải...</div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { getRequests, updateRequestStatus } from './app.js';
+
+        async function loadKanban() {
+            const reqs = await getRequests();
+            
+            document.querySelectorAll('.cards-container').forEach(c => c.innerHTML = '');
+
+            reqs.forEach(r => {
+                const col = document.querySelector(`#col-${r.status} .cards-container`);
+                if(col) {
+                    const card = document.createElement('div');
+                    card.className = 'kanban-card';
+                    card.innerHTML = `
+                        <strong>${r.id}</strong><br>
+                        ${r.title}<br>
+                        <span class="priority priority-${r.priority}">${r.priority}</span><br>
+                        <small>👤 ${r.requester}</small>
+                        <div style="margin-top: 10px; font-size: 12px;">
+                            Đổi trạng thái:
+                            <select class="status-select" data-id="${r.id}">
+                                <option value="Submitted" ${r.status === 'Submitted' ? 'selected' : ''}>Submitted</option>
+                                <option value="InProgress" ${r.status === 'InProgress' ? 'selected' : ''}>In Progress</option>
+                                <option value="WaitingInfo" ${r.status === 'WaitingInfo' ? 'selected' : ''}>Waiting Info</option>
+                                <option value="Resolved" ${r.status === 'Resolved' ? 'selected' : ''}>Resolved</option>
+                            </select>
+                        </div>
+                    `;
+                    col.appendChild(card);
+                }
+            });
+
+            // Gắn event listener cho các thẻ select
+            document.querySelectorAll('.status-select').forEach(select => {
+                select.addEventListener('change', async (e) => {
+                    const id = e.target.getAttribute('data-id');
+                    const newStatus = e.target.value;
+                    e.target.disabled = true; // Disable while updating
+                    await updateRequestStatus(id, newStatus);
+                    await loadKanban(); // Reload UI
+                });
+            });
+        }
+
+        // Init
+        loadKanban();
+    </script>
+</body>
+</html>
